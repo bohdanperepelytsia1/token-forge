@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Встановлення (без скриптів залежностей)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Збірка
+        run: npm run build
+      - name: Перевірка сайту і заголовків
+        run: |
+          PORT=8099 node scripts/serve.mjs &
+          sleep 2
+          curl -fsS -D headers.txt -o /dev/null http://127.0.0.1:8099/
+          curl -fsS -o /dev/null http://127.0.0.1:8099/models/resources.json
+          grep -qi "content-security-policy: default-src 'self'" headers.txt
+          grep -qi "cross-origin-embedder-policy: require-corp" headers.txt
+          test "$(curl -s -o /dev/null -w '%{http_code}' --path-as-is http://127.0.0.1:8099/../package.json)" = 404
+      - name: Немає eval у коді сторінки
+        run: '! grep -l "new Function" dist/assets/app-*.js'
+      - name: Аудит залежностей (лише звіт)
+        run: npm audit --omit=dev || true

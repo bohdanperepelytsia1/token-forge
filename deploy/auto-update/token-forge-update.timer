@@ -1,0 +1,11 @@
+[Unit]
+Description=Token Forge: перевіряти GitHub кожні 5 хвилин
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,18 @@
+[Unit]
+Description=Token Forge: оновлення з GitHub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/token-forge.env
+ExecStart=/usr/local/sbin/token-forge-update
+TimeoutStartSec=20min
+Nice=10
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/opt/token-forge

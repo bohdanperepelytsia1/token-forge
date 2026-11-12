@@ -1,0 +1,33 @@
+[Unit]
+Description=Token Forge (static site)
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/token-forge.env
+WorkingDirectory=/opt/token-forge/current
+ExecStart=@NODE@ /opt/token-forge/current/scripts/serve.mjs
+User=tokenforge
+Group=tokenforge
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadOnlyPaths=/opt/token-forge
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
