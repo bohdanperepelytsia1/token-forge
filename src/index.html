@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Прибрати фон з арту й зробити токен для НРІ. Усе працює у вашому браузері — зображення нікуди не завантажуються.">
+<title>Кузня токенів</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="%CSS%">
+<script src="config.js"></script>
+<script type="module" src="%APP%"></script>
+</head>
+<body>
+<header class="top">
+ <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg><span>Кузня токенів</span></div>
+ <nav class="tabs" id="tabs" hidden aria-label="Режим">
+  <button data-mode="token" class="on">Токен</button>
+  <button data-mode="cut">Прибрати фон</button>
+ </nav>
+ <div class="actions" id="topActions" hidden>
+  <button class="btn ghost" id="newBtn" title="Відкрити інше зображення"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Інше зображення</span></button>
+  <button class="btn primary" id="saveTop">Зберегти токен</button>
+ </div>
+</header>
+
+<main id="app" class="empty">
+ <section id="stage">
+  <canvas id="tkC" aria-label="Попередній перегляд токена"></canvas>
+  <canvas id="rmC" hidden aria-label="Зображення для прибирання фону"></canvas>
+  <div id="editHead" hidden><div id="editHint"></div></div>
+
+  <div id="viewBar">
+   <div class="vr"><label for="zoomR">Масштаб</label><input id="zoomR" type="range" min=".15" max="4" step=".01" data-k="T.zoom"></div>
+   <div class="vr"><label for="rotR">Поворот</label><input id="rotR" type="range" min="-180" max="180" step="1" data-k="T.rot"></div>
+   <div class="sep"></div>
+   <button class="btn ghost" id="fitPortrait" title="Голова й плечі">Портрет</button>
+   <button class="btn ghost" id="fitFull" title="Показати персонажа повністю">Повністю</button>
+   <button class="btn ghost" id="flipBtn" title="Віддзеркалити" aria-label="Віддзеркалити"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v18M8 7 3 12l5 5V7ZM16 7l5 5-5 5V7Z"/></svg></button>
+  </div>
+
+  <div id="busy" hidden role="status" aria-live="polite"><span></span><div class="bar"><i></i></div></div>
+
+  <div id="start">
+   <button class="btn ghost" id="startClose" hidden>Скасувати</button>
+   <div class="drop">
+    <h1>Токен за хвилину</h1>
+    <p>Перетягніть сюди арт персонажа або вставте посилання на картинку чи сторінку з нею: Pinterest, ArtStation, DeviantArt, Reddit, Imgur тощо.</p>
+    <form class="urlrow" id="urlForm">
+     <input id="urlInput" type="url" inputmode="url" placeholder="https://…" aria-label="Посилання на зображення" autocomplete="off" maxlength="2048">
+     <button class="btn primary" type="submit">Завантажити</button>
+    </form>
+    <div class="alt">
+     <label class="btn">Вибрати файл<input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp" hidden></label>
+     <button class="btn ghost" id="demoBtn">Спробувати на демо</button>
+    </div>
+    <small>Ctrl+V теж працює. Зображення обробляються на вашому пристрої й нікуди не відправляються.</small>
+   </div>
+  </div>
+ </section>
+
+ <aside id="panel">
+  <!-- ===== ТОКЕН ===== -->
+  <div id="tokenPanel">
+   <section class="grp">
+    <h2>Персонаж</h2>
+    <div class="two">
+     <button class="btn primary" id="aiBtn">Прибрати фон</button>
+     <button class="btn" id="editBtn">Підправити вручну</button>
+    </div>
+    <p class="hint" id="aiHint">Фон можна прибрати одним кліком, а потім підправити краї.</p>
+    <label class="switch"><input type="checkbox" data-k="T.popout"> Голова виходить за рамку</label>
+    <div class="range" id="popRow"><span>Висота виходу</span><output></output><input type="range" min=".04" max=".7" step=".01" data-k="T.popCut"></div>
+   </section>
+
+   <section class="grp">
+    <h2>Рамка</h2>
+    <div class="shapes" data-set="T.shape">
+     <button data-v="circle" title="Коло" aria-label="Коло"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg></button>
+     <button data-v="rounded" title="Заокруглений квадрат" aria-label="Заокруглений квадрат"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/></svg></button>
+     <button data-v="square" title="Квадрат" aria-label="Квадрат"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18"/></svg></button>
+     <button data-v="hex" title="Гекс, пласка верхівка" aria-label="Гекс з пласкою верхівкою"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12 7.2 4h9.6l4.7 8-4.7 8H7.2Z"/></svg></button>
+     <button data-v="hexp" title="Гекс, гостра верхівка" aria-label="Гекс з гострою верхівкою"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.5l8 4.7v9.6l-8 4.7-8-4.7V7.2Z"/></svg></button>
+     <button data-v="oct" title="Восьмикутник" aria-label="Восьмикутник"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8.3 3h7.4L21 8.3v7.4L15.7 21H8.3L3 15.7V8.3Z"/></svg></button>
+    </div>
+    <div class="thumbs" id="ringPresets"></div>
+    <details id="ringMore"><summary></summary><div class="inner"><div class="thumbs" id="ringPresetsMore"></div></div></details>
+    <details>
+     <summary>Тонке налаштування рамки</summary>
+     <div class="inner">
+      <label class="field">Стиль<select data-k="T.bStyle" id="styleSel"></select></label>
+      <div class="three"><label class="field">Основний<input type="color" data-k="T.c1"></label><label class="field">Тіньовий<input type="color" data-k="T.c2"></label><label class="field" id="accentRow">Акцент<input type="color" data-k="T.c3"></label></div>
+      <div class="range"><span>Товщина</span><output></output><input type="range" min="0" max="16" step=".5" data-k="T.bw"></div>
+      <div class="range" id="ticksRow"><span>Кількість деталей</span><output></output><input type="range" min="4" max="48" step="1" data-k="T.ticks"></div>
+      <div class="range"><span>Сяйво</span><output></output><input type="range" min="0" max="10" step=".5" data-k="T.glow"></div>
+      <label class="field" id="glowColRow">Колір сяйва<input type="color" data-k="T.glowColor"></label>
+      <label class="switch"><input type="checkbox" data-k="T.bevel"> Об'ємна фаска</label>
+      <label class="switch"><input type="checkbox" data-k="T.innerLine"> Тонка лінія всередині</label>
+      <label class="switch"><input type="checkbox" data-k="T.shadow"> Тінь під токеном</label>
+     </div>
+    </details>
+   </section>
+
+   <section class="grp">
+    <h2>Тло</h2>
+    <div class="thumbs" id="bgPresets"></div>
+    <details id="bgMore"><summary></summary><div class="inner"><div class="thumbs" id="bgPresetsMore"></div></div></details>
+    <details>
+     <summary>Свої кольори або картинка</summary>
+     <div class="inner">
+      <div class="two" id="bgColors"><label class="field">Колір 1<input type="color" data-k="T.bg1"></label><label class="field">Колір 2<input type="color" data-k="T.bg2"></label></div>
+      <label class="btn">Поставити свою картинку<input type="file" id="bgFile" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden></label>
+      <label class="switch"><input type="checkbox" data-k="T.vignette"> Затемнення по краях</label>
+      <label class="switch"><input type="checkbox" data-k="T.subjShadow"> Тінь від персонажа</label>
+     </div>
+    </details>
+   </section>
+
+   <section class="grp">
+    <h2>Підпис</h2>
+    <input type="text" data-k="T.name" placeholder="Ім'я на стрічці" aria-label="Ім'я на стрічці" maxlength="40">
+    <div class="two">
+     <input type="number" min="0" max="999" data-k="T.num" placeholder="Номер" aria-label="Номер на значку">
+     <select data-k="T.numPos" aria-label="Де значок"><option value="tr">Справа вгорі</option><option value="tl">Зліва вгорі</option><option value="br">Справа внизу</option><option value="bl">Зліва внизу</option></select>
+    </div>
+    <details>
+     <summary>Шрифт і кольори підпису</summary>
+     <div class="inner">
+      <label class="field">Шрифт<select data-k="T.nameFont"><option value="Cormorant SC">Cormorant SC</option><option value="Ruslan Display">Ruslan Display</option><option value="Philosopher">Philosopher</option><option value="Marck Script">Marck Script</option><option value="Alegreya Sans">Alegreya Sans</option></select></label>
+      <div class="three"><label class="field">Текст<input type="color" data-k="T.nameColor"></label><label class="field">Стрічка<input type="color" data-k="T.bannerColor"></label><label class="field">Значок<input type="color" data-k="T.numColor"></label></div>
+     </div>
+    </details>
+   </section>
+
+   <section class="grp">
+    <h2>Збереження</h2>
+    <div class="seg" data-set="T.size" role="group" aria-label="Розмір"><button data-v="256">256</button><button data-v="512">512</button><button data-v="1024">1024</button><button data-v="2048">2048</button></div>
+    <div class="seg" data-set="T.fmt" role="group" aria-label="Формат"><button data-v="png">PNG</button><button data-v="webp">WebP</button></div>
+    <button class="btn primary wide" id="saveToken">Зберегти токен</button>
+    <details>
+     <summary>Пакет з номерами й Foundry</summary>
+     <div class="inner">
+      <p class="hint">Однаковий токен для групи ворогів, кожен зі своїм номером, — одним ZIP-архівом.</p>
+      <div class="two"><label class="field">Скільки<input type="number" id="batchN" value="6" min="1" max="60"></label><label class="field">Починаючи з<input type="number" id="batchStart" value="1" min="0" max="999"></label></div>
+      <button class="btn wide" id="saveBatch">Зберегти пакет (ZIP)</button>
+      <button class="btn wide" id="saveSubject" title="Без рамки й тла, у тому ж масштабі">Лише персонаж для Foundry Dynamic Ring</button>
+     </div>
+    </details>
+   </section>
+  </div>
+
+  <!-- ===== ПРИБРАТИ ФОН ===== -->
+  <div id="cutPanel" hidden>
+   <section class="grp">
+    <h2>Автоматично</h2>
+    <button class="btn primary wide" id="aiBtn2">Прибрати фон</button>
+    <div class="seg" data-set="R.quality" role="group" aria-label="Якість"><button data-v="fast">Швидко</button><button data-v="best">Якісніше</button></div>
+    <label class="switch"><input type="checkbox" data-k="R.clean"> Чисті краї (прибирати відтінок старого фону)</label>
+    <p class="hint" id="aiHint2">Нейромережа працює на вашому пристрої. Якщо є відеокарта, вона рахує на ній.</p>
+   </section>
+   <section class="grp">
+    <h2>Вручну</h2>
+    <div class="seg" id="tools" role="group" aria-label="Інструмент">
+     <button data-tool="wand" class="on">Паличка</button><button data-tool="erase">Стерти</button><button data-tool="restore">Повернути</button>
+    </div>
+    <div class="range" id="tolRow"><span>Схожість кольору</span><output></output><input type="range" min="1" max="60" step="1" data-k="R.tol"></div>
+    <label class="switch" id="globalRow"><input type="checkbox" data-k="R.global"> Прибирати цей колір по всьому зображенню</label>
+    <div class="range" id="brushRow"><span>Розмір пензля</span><output></output><input type="range" min="4" max="160" step="1" data-k="R.brush"></div>
+    <div class="range" id="hardRow"><span>Жорсткість краю</span><output></output><input type="range" min="0" max="100" step="1" data-k="R.hard"></div>
+    <button class="btn" id="autoBtn">Прибрати однотонний фон</button>
+    <div class="two"><button class="btn" id="erodeBtn" title="Зрізає 1 піксель по краю, щоб прибрати ореол">Прибрати ореол</button><button class="btn" id="featherBtn">Згладити край</button></div>
+    <div class="three"><button class="btn" id="undoBtn" title="Ctrl+Z">Назад</button><button class="btn" id="redoBtn" title="Ctrl+Shift+Z">Вперед</button><button class="btn" id="resetBtn">Оригінал</button></div>
+   </section>
+   <section class="grp">
+    <h2>Перегляд</h2>
+    <div class="views" id="views" role="group" aria-label="Тло перевірки">
+     <button data-v="checker" title="Шахівниця" aria-label="Шахівниця" class="v-check"></button>
+     <button data-v="#000000" title="Чорне" aria-label="Чорне" class="v-black"></button>
+     <button data-v="#ffffff" title="Біле" aria-label="Біле" class="v-white"></button>
+     <button data-v="#ff00ff" title="Пурпурне: добре видно ореол" aria-label="Пурпурне" class="v-magenta"></button>
+    </div>
+    <label class="switch"><input type="checkbox" data-k="R.ghost"> Просвічувати оригінал</label>
+   </section>
+   <section class="grp">
+    <h2>Зберегти</h2>
+    <div class="seg" data-set="R.outBg" role="group" aria-label="Тло файлу"><button data-v="none">Прозоре</button><button data-v="white">Біле</button><button data-v="color">Колір</button></div>
+    <label class="field" id="outColorRow">Колір тла<input type="color" data-k="R.outColor"></label>
+    <label class="switch"><input type="checkbox" data-k="R.crop"> Обрізати порожні краї</label>
+    <button class="btn primary wide" id="saveCut">Зберегти PNG</button>
+    <button class="btn wide" id="toToken">Зробити з цього токен</button>
+   </section>
+  </div>
+ </aside>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:20px">Для роботи потрібен JavaScript.</p></noscript>
+</body>
+</html>

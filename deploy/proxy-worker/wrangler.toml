@@ -1,0 +1,14 @@
+name = "token-forge-proxy"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Адреса(и) вашого сайту через кому. Запити з інших сайтів відхиляються.
+ALLOWED_ORIGINS = "https://tokens.example.com"
+
+# Обмеження частоти запитів: 30 на хвилину з однієї IP-адреси.
+[[unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

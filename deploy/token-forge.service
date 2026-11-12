@@ -1,0 +1,35 @@
+# systemd-сервіс для запуску без Docker (поруч із G.O.D. на тому ж сервері).
+# 1) git clone ... /opt/token-forge && cd /opt/token-forge && npm ci && npm run build
+# 2) sudo cp deploy/token-forge.service /etc/systemd/system/ && sudo systemctl enable --now token-forge
+# 3) Направте Cloudflare Tunnel або nginx на http://127.0.0.1:8090
+[Unit]
+Description=Token Forge (static site)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/token-forge
+ExecStart=/usr/bin/node scripts/serve.mjs
+Environment=PORT=8090
+Environment=HOST=127.0.0.1
+User=www-data
+Group=www-data
+Restart=on-failure
+# Обмеження прав процесу
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+ReadOnlyPaths=/opt/token-forge
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
