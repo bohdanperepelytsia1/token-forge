@@ -16,7 +16,7 @@
   "dependencies": {
     "@imgly/background-removal": "1.7.0",
     "jszip": "3.10.1",
-    "onnxruntime-web": "1.21.0"
+    "onnxruntime-web": "1.31.1"
   },
   "devDependencies": {
     "@fontsource/alegreya-sans": "5.3.0",
