@@ -241,12 +241,15 @@ async function aiCfg(progress) {
     output: { format: 'image/x-rgba8' }, progress,
   };
 }
+let warmStart = 0;
 function onWarm(key, cur, total) {
   if (!total || !/fetch/.test(key)) return; warmPct = cur / total;
-  if (aiRunning) busy('Завантажую AI-модель (лише перший раз)…', warmPct); else aiHint('Готую AI-модель: ' + Math.round(warmPct * 100) + '%');
+  if (performance.now() - warmStart < 600 || warmPct >= 1) return; // з кешу — миттєво, нічого не показуємо
+  if (aiRunning) busy('Завантажую AI-модель (лише перший раз)…', warmPct); else aiHint('Завантажую AI-модель (лише перший раз): ' + Math.round(warmPct * 100) + '%');
 }
 function warmup() {
   if (warm) return warm;
+  warmStart = performance.now();
   warm = (async () => { const L = await lib(); await L.preload(await aiCfg(onWarm)); })();
   warm.then(() => { if (!aiRunning && !cutDone) aiHint('AI готовий: фон прибирається за кілька секунд.', 'ok'); }).catch((e) => { console.warn(e); warm = null; });
   return warm;
@@ -375,6 +378,7 @@ function demo() {
 function bindEvents() {
   $('#tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setMode(b.dataset.mode); });
   $('#newBtn').onclick = () => showStart(true);
+  $('#homeLink').addEventListener('click', (e) => { e.preventDefault(); showStart(true); });
   $('#startClose').onclick = () => showStart(false);
   $('#demoBtn').onclick = demo;
   $('#file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) openBlob(f, f.name); e.target.value = ''; });
@@ -477,4 +481,8 @@ buildRingThumbs(false); buildBgThumbs(false);
 lazyMore('#ringMore', RING_PRESETS.length, 'рамок', buildRingThumbs);
 lazyMore('#bgMore', BG_PRESETS.length, 'варіантів тла', buildBgThumbs);
 syncUI(); setMode('token'); showStart(true);
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('sw.js', { scope: './' }).catch((e) => console.warn('service worker', e));
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+}
 document.fonts && document.fonts.ready.then(() => { buildRingThumbs(!!$('#ringMore').open); scheduleRender(); });
